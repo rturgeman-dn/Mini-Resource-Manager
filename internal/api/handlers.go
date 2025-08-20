@@ -31,7 +31,8 @@ func (h *Handler) HandleCreateTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 409 Conflict with { "error": "template_exists" }
-	if h.store.TemplateExists(template.Name) {
+	_, exists := h.store.TemplateExists(template.Name)
+	if exists {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(map[string]string{"error": "template_exists"})
 		return
@@ -62,7 +63,7 @@ func (h *Handler) HandleCreatePool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exists := h.store.TemplateExists(pool.Tmpl)
+	template, exists := h.store.TemplateExists(pool.Tmpl)
 	if !exists {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "template_not_found"})
@@ -76,10 +77,16 @@ func (h *Handler) HandleCreatePool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// save pool to database (in-memory store)
+	// Pull min/max from template and init the pool
+	pool.Min = template.Min
+	pool.Max = template.Max
+	pool.InUse = make(map[int]bool)
+	pool.Next = template.Min
+
+	// Save pool
 	h.store.CreatePool(pool)
 
-	// return 201 Created with the new template in the response body
+	// return 201 Created with the new pool in the response body
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(pool)
 }

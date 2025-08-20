@@ -22,11 +22,11 @@ func (s *Store) CreateTemplate(template Template) error {
 	return nil
 }
 
-func (s *Store) TemplateExists(name string) bool {
+func (s *Store) TemplateExists(name string) (Template, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	_, exists := s.templates[name]
-	return exists
+	template, exists := s.templates[name]
+	return template, exists
 }
 
 func (s *Store) CreatePool(pool Pool) error {
