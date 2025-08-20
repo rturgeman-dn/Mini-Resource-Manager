@@ -1,5 +1,6 @@
 // Package models provides the core types for the application.
 package core
+import "context"
 
 // Template defines a named range of integers (inclusive: [Min, Max])
 // for example: { "name": "vlan", "min": 100, "max": 105 }
@@ -21,7 +22,7 @@ type Pool struct {
 type AllocateRequest struct {
 	Pool  string
 	Reply chan AllocateResponse
-	// Ctx   context.Context
+	Ctx   context.Context
 }
 type AllocateResponse struct {
 	Value int

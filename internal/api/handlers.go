@@ -90,3 +90,31 @@ func (h *Handler) HandleCreatePool(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(pool)
 }
+
+func (h *Handler) HandleAllocate(w http.ResponseWriter, r *http.Request) {
+	var request core.AllocateRequest
+
+	// decode JSON from request body to core.AllocateRequest struct
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// validate request
+	if request.Pool == "" {
+		http.Error(w, "Pool is required", http.StatusBadRequest)
+		return
+	}
+
+	// check that pool exists
+	pool, exists := h.store.PoolExists(request.Pool) 
+	if !exists {
+		w.WriteHeader(http.StatusNotFound) // 404 Not Found
+		json.NewEncoder(w).Encode(map[string]string{"error": "pool_not_found"})
+		return
+	}
+
+	// check that pool is not full
+	
+}

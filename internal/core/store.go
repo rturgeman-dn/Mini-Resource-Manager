@@ -36,9 +36,9 @@ func (s *Store) CreatePool(pool Pool) error {
 	return nil
 }
 
-func (s *Store) PoolExists(name string) bool {
+func (s *Store) PoolExists(name string) (Pool, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	_, exists := s.pools[name]
-	return exists
+	pool, exists := s.pools[name]
+	return pool, exists
 }

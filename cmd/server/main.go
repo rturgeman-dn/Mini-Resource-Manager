@@ -1,7 +1,6 @@
 package main
 //The Application Entry Point
 
-
 import (
 	"fmt"
 	"Mini-Resource-Manager/internal/api"
@@ -12,7 +11,10 @@ import (
 func main() {
 	store := core.NewStore() // in-memory store (map)
 	
-	// Create handler with store dependency
+	// Creates a new API handler and injects the shared in-memory store
+	// This allows all handler methods (e.g., HandleCreateTemplate, HandleCreatePool) 
+	// to access the store via h.store without passing it explicitly to every function.
+	// Improves modularity, testability, and keeps the codebase clean and extensible.
 	handler := api.NewHandler(store)
 	
 	// Create mux and register routes
