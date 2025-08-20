@@ -1,4 +1,6 @@
 package main
+//The Application Entry Point
+
 
 import (
 	"fmt"
@@ -9,17 +11,14 @@ import (
 
 func main() {
 	store := core.NewStore() // in-memory store (map)
-
-	// POST /templates
-	http.HandleFunc("/templates", func(w http.ResponseWriter, r *http.Request) {
-		api.HandleCreateTemplate(w, r, store)
-	})
-
-	// POST /pools
-	http.HandleFunc("/pools", func(w http.ResponseWriter, r *http.Request) {
-		api.HandleCreatePool(w, r, store)
-	})
+	
+	// Create handler with store dependency
+	handler := api.NewHandler(store)
+	
+	// Create mux and register routes
+	mux := http.NewServeMux()
+	handler.RegisterRoutes(mux)
 
 	fmt.Println("Listening on port 8080...")
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", mux)
 }
