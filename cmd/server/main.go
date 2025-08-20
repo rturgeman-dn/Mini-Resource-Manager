@@ -15,6 +15,11 @@ func main() {
 		api.HandleCreateTemplate(w, r, store)
 	})
 
+	// POST /pools
+	http.HandleFunc("/pools", func(w http.ResponseWriter, r *http.Request) {
+		api.HandleCreatePool(w, r, store)
+	})
+
 	fmt.Println("Listening on port 8080...")
 	http.ListenAndServe(":8080", nil)
 }

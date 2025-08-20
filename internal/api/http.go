@@ -38,10 +38,48 @@ func HandleCreateTemplate(w http.ResponseWriter, r *http.Request, store *core.St
 		return
 	}
 
-	// save template to database
-	store.AddTemplate(template)
+	// save template to database (in-memory store)
+	store.CreateTemplate(template)
 
 	// return 201 Created with the new template in the response body
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(template)
+}
+
+func HandleCreatePool(w http.ResponseWriter, r *http.Request, store *core.Store) {
+	var pool core.Pool
+
+	// decode JSON from request body to core.Pool struct
+	err := json.NewDecoder(r.Body).Decode(&pool)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if pool.Name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Name is required"})
+		return
+	}
+
+	exists := store.TemplateExists(pool.Tmpl)
+	if !exists {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "template_not_found"})
+		return
+	}
+
+	// 409 Conflict with { "error": "pool_exists" }
+	if store.PoolExists(pool.Name) {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{"error": "pool_exists"})
+		return
+	}
+
+	// save pool to database (in-memory store)
+	store.CreatePool(pool)
+
+	// return 201 Created with the new template in the response body
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(pool)
 }

@@ -10,11 +10,12 @@ type Template struct {
 }
 
 type Pool struct {
-	Name   string // name of the pool
-	Tmpl   string // name of the template to use
-	Min, Max int // min and max values of the pool
-	InUse  map[int]bool // allocated flag
-	Next   int          // next scan start (inclusive)
+	Name   string `json:"name"`   // name of the pool
+	Tmpl   string `json:"template"` // name of the template to use
+	Min       int    `json:"min"`
+	Max       int    `json:"max"`
+	InUse  map[int]bool `json:"in_use"` // allocated flag
+	Next   int `json:"next"`          // next scan start (inclusive)
   }
   
 type AllocateRequest struct {
