@@ -8,3 +8,28 @@ type Template struct {
 	Min       int    `json:"min"`
 	Max       int    `json:"max"` //min <= max
 }
+
+type Pool struct {
+	Name   string // name of the pool
+	Tmpl   string // name of the template to use
+	Min, Max int // min and max values of the pool
+	InUse  map[int]bool // allocated flag
+	Next   int          // next scan start (inclusive)
+  }
+  
+type AllocateRequest struct {
+	Pool  string
+	Reply chan AllocateResponse
+	// Ctx   context.Context
+}
+type AllocateResponse struct {
+	Value int
+	Err   error
+}
+
+type ReleaseRequest struct {
+	Pool  string
+	Value int
+	Reply chan error
+	// Ctx   context.Context
+}
