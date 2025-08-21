@@ -25,4 +25,5 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /templates", h.HandleCreateTemplate)
 	mux.HandleFunc("POST /pools", h.HandleCreatePool)
 	mux.HandleFunc("POST /allocate", h.HandleAllocate) 
+	mux.HandleFunc("POST /release", h.HandleRelease)
 }

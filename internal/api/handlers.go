@@ -159,3 +159,53 @@ func (h *Handler) HandleAllocate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (h *Handler) HandleRelease(w http.ResponseWriter, r *http.Request) {
+	var reqBody struct {
+		Pool string `json:"pool"`
+		Value int `json:"value"`
+	}
+	
+	// decode JSON from request body to core.AllocateRequest struct
+	err := json.NewDecoder(r.Body).Decode(&reqBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// check that pool exists
+	pool, exists := h.store.PoolExists(reqBody.Pool)
+	if !exists {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "pool_not_found"})
+		return
+	}
+
+	// check if the value is out of range
+	if reqBody.Value < pool.Min || reqBody.Value > pool.Max {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "value_out_of_range"})
+		return
+	}
+
+	// check if the value not allocated
+	if !pool.InUse[reqBody.Value] {
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{"error": "not_allocated"})
+		return
+	}
+	
+	// lock the pool
+	pool.Mutex.Lock()
+	defer pool.Mutex.Unlock()
+
+	// release the value
+	pool.InUse[reqBody.Value] = false
+	if pool.Next > reqBody.Value{
+		pool.Next = reqBody.Value
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "released"})
+	return
+}
