@@ -31,7 +31,9 @@ func (a *Allocator) Allocate(request core.AllocateRequest) {
 		return
 	}
 
-	//  TODO: lock the pool
+	// lock the pool
+	pool.Mutex.Lock()
+	defer pool.Mutex.Unlock()
 
 	// try to allocate item
 	for item := pool.Next ; item <= pool.Max ; item++ {

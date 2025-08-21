@@ -1,6 +1,9 @@
 // Package models provides the core types for the application.
 package core
-import "context"
+import (
+	"context"
+	"sync"
+)
 
 // Template defines a named range of integers (inclusive: [Min, Max])
 // for example: { "name": "vlan", "min": 100, "max": 105 }
@@ -17,6 +20,7 @@ type Pool struct {
 	Max       int    `json:"max"`
 	InUse  map[int]bool `json:"in_use"` // allocated flag
 	Next   int `json:"next"`          // next scan start (inclusive)
+	Mutex  sync.Mutex
   }
   
 type AllocateRequest struct {
