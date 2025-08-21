@@ -73,5 +73,13 @@ func main() {
 
 	// Wait for all workers to finish
 	wg.Wait()
+
+	// Print metrics
+	fmt.Println("--------------------------------")
+	fmt.Println("Metrics:")
+	allocations, releases, timeouts := store.Metrics.GetMetrics()
+	fmt.Printf("Allocations: %d, Releases: %d, Timeouts: %d\n", allocations, releases, timeouts)
+	fmt.Println("--------------------------------")
+	
 	fmt.Println("Server stopped gracefully")
 }

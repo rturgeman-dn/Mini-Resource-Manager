@@ -6,12 +6,21 @@ type Store struct {
 	templates map[string]Template
 	pools     map[string]*Pool
 	mutex     sync.RWMutex
+	Metrics   *Metrics
+}
+
+type Metrics struct {
+	allocations int64
+	releases    int64
+	timeouts    int64
+	mutex       sync.RWMutex
 }
 
 func NewStore() *Store {
 	return &Store{
 		templates: make(map[string]Template),
 		pools:     make(map[string]*Pool),
+		Metrics:   &Metrics{},
 	}
 }
 
@@ -41,4 +50,28 @@ func (s *Store) PoolExists(name string) (*Pool, bool) {
 	defer s.mutex.RUnlock()
 	pool, exists := s.pools[name]
 	return pool, exists
+}
+
+func (m *Metrics) IncrementAllocations() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.allocations++
+}
+
+func (m *Metrics) IncrementReleases() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.releases++
+}
+
+func (m *Metrics) IncrementTimeouts() {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	m.timeouts++
+}
+
+func (m *Metrics) GetMetrics() (int64, int64, int64) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	return m.allocations, m.releases, m.timeouts
 }

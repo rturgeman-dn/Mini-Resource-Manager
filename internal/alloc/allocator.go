@@ -41,6 +41,7 @@ func (a *Allocator) Allocate(request core.AllocateRequest) {
 		if !pool.InUse[item] {
 			pool.InUse[item] = true
 			pool.Next = item + 1
+			a.store.Metrics.IncrementAllocations()
 			request.Reply <- core.AllocateResponse{
 				Value: item,
 				Err: nil,
@@ -50,6 +51,7 @@ func (a *Allocator) Allocate(request core.AllocateRequest) {
 	}
 
 	// no free items found
+	a.store.Metrics.IncrementTimeouts()
 	request.Reply <- core.AllocateResponse{
 		Err: core.ErrNoFreeItems,
 	}
@@ -87,6 +89,7 @@ func (a *Allocator) Release(request core.ReleaseRequest) {
 		pool.Next = request.Value
 	}
 
+	a.store.Metrics.IncrementReleases()
 	request.Reply <- nil
 }
 
