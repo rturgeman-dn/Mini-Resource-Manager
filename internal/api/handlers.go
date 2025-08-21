@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"Mini-Resource-Manager/internal/core"
+	"context"
+	"time"
 )
 
 // HandleCreateTemplate handles the incoming HTTP POST request to create a new template
@@ -71,7 +73,8 @@ func (h *Handler) HandleCreatePool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 409 Conflict with { "error": "pool_exists" }
-	if h.store.PoolExists(pool.Name) {
+	_, poolExists := h.store.PoolExists(pool.Name)  // Fixed: handle both return values
+	if poolExists {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(map[string]string{"error": "pool_exists"})
 		return
@@ -83,8 +86,8 @@ func (h *Handler) HandleCreatePool(w http.ResponseWriter, r *http.Request) {
 	pool.InUse = make(map[int]bool)
 	pool.Next = template.Min
 
-	// Save pool
-	h.store.CreatePool(pool)
+	// Save pool 
+	h.store.CreatePool(&pool)  
 
 	// return 201 Created with the new pool in the response body
 	w.WriteHeader(http.StatusCreated)
@@ -92,29 +95,67 @@ func (h *Handler) HandleCreatePool(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) HandleAllocate(w http.ResponseWriter, r *http.Request) {
-	var request core.AllocateRequest
-
+	var reqBody struct {
+		Pool string `json:"pool"`
+	}
+	
 	// decode JSON from request body to core.AllocateRequest struct
-	err := json.NewDecoder(r.Body).Decode(&request)
+	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// validate request
-	if request.Pool == "" {
+	if reqBody.Pool == "" {
 		http.Error(w, "Pool is required", http.StatusBadRequest)
 		return
 	}
 
 	// check that pool exists
-	pool, exists := h.store.PoolExists(request.Pool) 
+	_, exists := h.store.PoolExists(reqBody.Pool) 
 	if !exists {
-		w.WriteHeader(http.StatusNotFound) // 404 Not Found
+		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "pool_not_found"})
 		return
 	}
 
-	// check that pool is not full
-	
+	// check timeout (10 seconds)
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	replyCh := make(chan core.AllocateResponse, 1)
+	req := core.AllocateRequest{
+		Pool: reqBody.Pool,
+		Ctx: ctx,
+		Reply: replyCh,  
+	}
+
+	// Send request to allocator
+	select {
+	case h.allocator.AllocCh <- req:  // Send to allocator channel
+		// Request sent successfully
+	case <-ctx.Done():
+		w.WriteHeader(http.StatusRequestTimeout)
+		json.NewEncoder(w).Encode(map[string]string{"error": "request_timeout"})
+		return
+	}
+
+	// Wait for response from allocator
+	select {
+	case <-ctx.Done():
+		w.WriteHeader(http.StatusRequestTimeout)
+		json.NewEncoder(w).Encode(map[string]string{"error": "request_timeout"})
+		return
+	case reply := <-replyCh:
+		if reply.Err == core.ErrNoFreeItems {
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]string{"error": "no_free_items"})
+			return
+		} 
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]int{"value": reply.Value})
+		return
+	}
 }

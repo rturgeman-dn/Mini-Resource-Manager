@@ -4,14 +4,14 @@ import "sync"
 
 type Store struct {
 	templates map[string]Template
-	pools     map[string]Pool
+	pools     map[string]*Pool
 	mutex     sync.RWMutex
 }
 
 func NewStore() *Store {
 	return &Store{
 		templates: make(map[string]Template),
-		pools:     make(map[string]Pool),
+		pools:     make(map[string]*Pool),
 	}
 }
 
@@ -29,14 +29,14 @@ func (s *Store) TemplateExists(name string) (Template, bool) {
 	return template, exists
 }
 
-func (s *Store) CreatePool(pool Pool) error {
+func (s *Store) CreatePool(pool *Pool) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.pools[pool.Name] = pool
 	return nil
 }
 
-func (s *Store) PoolExists(name string) (Pool, bool) {
+func (s *Store) PoolExists(name string) (*Pool, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 	pool, exists := s.pools[name]

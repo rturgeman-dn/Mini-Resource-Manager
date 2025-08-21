@@ -33,5 +33,5 @@ type ReleaseRequest struct {
 	Pool  string
 	Value int
 	Reply chan error
-	// Ctx   context.Context
+	Ctx   context.Context
 }
