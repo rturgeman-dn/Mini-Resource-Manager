@@ -209,3 +209,19 @@ func (h *Handler) HandleRelease(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "released"})
 	return
 }
+
+func (h *Handler) HandleGetPools(w http.ResponseWriter, r *http.Request) {
+	poolName := r.PathValue("name")
+
+	pool, exists := h.store.PoolExists(poolName)
+	if !exists {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "pool_not_found"})
+		return
+	}
+
+	// return the pool
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(pool)
+	return
+}
